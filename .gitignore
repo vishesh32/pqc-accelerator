@@ -1,0 +1,6 @@
+build/
+formal/*/
+obj_dir/
+*.vcd
+*.o
+*.a
