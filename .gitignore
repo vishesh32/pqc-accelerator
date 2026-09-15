@@ -4,3 +4,4 @@ obj_dir/
 *.vcd
 *.o
 *.a
+.venv/
