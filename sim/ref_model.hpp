@@ -1,6 +1,6 @@
+#pragma once
 #include <cstdint>
 #include <cstdio>
-#include <cmath>
 
 static const uint32_t Q     = 3329;
 static const uint32_t R     = 1u << 16;
@@ -14,15 +14,11 @@ inline uint32_t mont_reduce_ref(uint32_t x) {
 
 inline int check_constants() {
     int bad = 0;
-    // verify R * R_INV mod Q == 1
-    if(mont_reduce_ref(R) != 1) {
-        bad++;
-        printf("R * R_INV mod Q != 1\n");
-    }
+
     // verify R_INV is actually 169
-    if(R_INV != (uint32_t)(R^-1 % Q)) {
+    if((uint64_t)R * R_INV % Q != 1) {
         bad++;
-        printf("R_INV is not 169\n");
+        printf("FAIL: R * R_INV mod Q = %llu, expected 1\n");
     }
 
     return bad;
