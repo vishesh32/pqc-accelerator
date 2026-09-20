@@ -11,7 +11,7 @@ module mont_reduce (
     localparam logic [11:0] Q         = 12'd3329;
     localparam logic [15:0] Q_NEG_INV = 16'd3327;  // -q^-1 mod 2^16, pairs with ADD
 
-    // stage 1 registers -- what gets saved at the end of stage 1
+    // stage 1 registers 
     logic [23:0] x_s1;       // x delayed one cycle
     logic [15:0] m_s1;       // m computed in stage 1
 
@@ -21,7 +21,7 @@ module mont_reduce (
     // validity tracking shift register
     logic [2:0]  v;           // v[0]=after stage1, v[1]=after stage2, v[2]=output
 
-    // stage 1: combinational -- just wiring, no register needed yet
+    // stage 1: combinational portion
     logic [15:0] x_low;
     logic [31:0] m_full;
     logic [15:0] m;
@@ -44,10 +44,14 @@ module mont_reduce (
             m_s1 <= m;
 
             // stage 2: compute and register t
-            // fill this in -- x_s1 + m_s1 * Q, what width?
+            t_s2 <= {4'b0, x_s1} + {16'b0, m_s1} * Q;
 
             // stage 3: shift and conditional subtract
-            // fill this in -- t_s2[27:16], then compare against Q
+            if (t_s2[27:16] >= Q) begin
+                z <= t_s2[27:16] - Q;
+            end else begin
+                z <= t_s2[27:16];
+            end
 
             // validity pipeline
             v[0] <= in_valid;
