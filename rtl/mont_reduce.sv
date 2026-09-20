@@ -7,6 +7,7 @@ module mont_reduce (
     output logic [11:0] z
 );
 
+    
     // constants -- localparam for things that never change
     localparam logic [11:0] Q         = 12'd3329;
     localparam logic [15:0] Q_NEG_INV = 16'd3327;  // -q^-1 mod 2^16, pairs with ADD
@@ -25,6 +26,8 @@ module mont_reduce (
     logic [15:0] x_low;
     logic [31:0] m_full;
     logic [15:0] m;
+    logic [27:0] mq;
+    assign mq = m_s1 * Q;   // 16x12 = max 218,166,015, fits in 28 bits
 
     assign x_low  = x[15:0];
     assign m_full = x_low * Q_NEG_INV;   // 16x16 = 32 bit product
@@ -44,7 +47,7 @@ module mont_reduce (
             m_s1 <= m;
 
             // stage 2: compute and register t
-            t_s2 <= {4'b0, x_s1} + {16'b0, m_s1} * Q;
+            t_s2 <= {4'b0, x_s1} + mq;  
 
             // stage 3: shift and conditional subtract
             if (t_s2[27:16] >= Q) begin

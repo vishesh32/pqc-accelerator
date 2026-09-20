@@ -1,4 +1,5 @@
 #pragma once
+
 #include <cstdint>
 #include <cstdio>
 
@@ -16,9 +17,10 @@ inline int check_constants() {
     int bad = 0;
 
     // verify R_INV is actually 169
-    if((uint64_t)R * R_INV % Q != 1) {
+    uint32_t check = (uint64_t)R * R_INV % Q;
+    if(check != 1) {
         bad++;
-        printf("FAIL: R * R_INV mod Q = %llu, expected 1\n");
+        printf("FAIL: R * R_INV mod Q = %llu, expected 1\n", (unsigned long long)check);
     }
 
     return bad;

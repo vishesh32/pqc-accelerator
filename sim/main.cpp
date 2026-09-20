@@ -24,7 +24,11 @@ static void reset(Vmont_reduce* dut) {
 int main(int argc, char** argv) {
     Verilated::commandArgs(argc, argv);
 
-    // TODO: check_constants() first
+    int bad = check_constants();
+    if (bad) {
+        printf("FAIL: %d constant checks failed\n", bad);
+        return 1;
+    }
 
     auto* dut = new Vmont_reduce;
     reset(dut);
@@ -34,9 +38,62 @@ int main(int argc, char** argv) {
     long mismatches = 0;
     long checked = 0;
 
-    // TODO: feed loop
-    // TODO: drain remaining outputs after feeding stops
-    // TODO: report result
+    // feed loop
+    for (uint32_t i = 0; i < N; i++) {
+        uint32_t x = i;
+
+        dut->in_valid = 1;
+        dut->x = x;
+        tick(dut);
+
+        inflight.push_back(x);
+
+        if (dut->out_valid) {
+            uint32_t z_dut = dut->z;
+            uint32_t input = inflight.front();
+            inflight.pop_front();
+            uint32_t z_expected = mont_reduce_ref(input);
+
+            if (z_dut != z_expected) {
+                printf("Mismatch: input=%u, expected=%u, got=%u\n", input, z_expected, z_dut);
+                mismatches++;
+            }
+            checked++;
+        }
+
+        // progress whilst happening
+        if (i % (1u << 21) == 0)
+        printf("\r  %.0f%%  complete, so far checked=%ld, mismatches=%ld \n", 100.0 * i / N, checked, mismatches);
+    }
+
+
+    // drain remaining outputs after feeding stops
+    int drain_cycles = 0;
+    while (!inflight.empty() && drain_cycles < 10) {
+        dut->in_valid = 0;
+        tick(dut);
+        drain_cycles++;
+
+        if (dut->out_valid) {
+            drain_cycles = 0;
+            uint32_t z_dut = dut->z;
+            uint32_t input = inflight.front();
+            inflight.pop_front();
+            uint32_t z_expected = mont_reduce_ref(input);
+
+            if (z_dut != z_expected) {
+                printf("Mismatch: input=%u, expected=%u, got=%u\n", input, z_expected, z_dut);
+                mismatches++;
+            }
+            checked++;
+        }
+    }
+    if (!inflight.empty())
+    printf("ERROR: %zu outputs never arrived\n", inflight.size());
+    if (checked != N)
+        printf("ERROR: checked=%ld expected=%u\n", checked, N);
+    
+    printf("Checked %ld inputs, %ld mismatches\n", checked, mismatches);
 
     delete dut;
     return mismatches ? 1 : 0;
