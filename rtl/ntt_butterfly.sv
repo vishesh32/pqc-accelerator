@@ -10,6 +10,12 @@ module ntt_butterfly (
     output logic [11:0] b_out
 );
 
+/* verilator lint_off UNUSED */
+logic [27:0] t_s2;
+logic [31:0] m_full;
+/* verilator lint_on UNUSED */
+
+
 // wires connecting butterfly to the reducer
 logic [23:0] bz_product;   // b * zeta, 24-bit product
 logic [11:0] t;             // reducer output

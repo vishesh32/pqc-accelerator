@@ -25,3 +25,10 @@ inline int check_constants() {
 
     return bad;
 }
+
+
+inline void butterfly_ref(uint32_t a, uint32_t b, uint32_t zeta, uint32_t& a_out, uint32_t& b_out) {
+    uint32_t t = mont_reduce_ref(b * zeta);
+    a_out = (a + t) % Q;
+    b_out = (a + Q - t) % Q;
+}

@@ -6,34 +6,31 @@ module mont_reduce (
     output logic        out_valid,
     output logic [11:0] z
 );
-
-    
-    // constants -- localparam for things that never change
     localparam logic [11:0] Q         = 12'd3329;
-    localparam logic [15:0] Q_NEG_INV = 16'd3327;  // -q^-1 mod 2^16, pairs with ADD
+    localparam logic [15:0] Q_NEG_INV = 16'd3327;
 
-    // stage 1 registers 
-    logic [23:0] x_s1;       // x delayed one cycle
-    logic [15:0] m_s1;       // m computed in stage 1
+    logic [23:0] x_s1;
+    logic [15:0] m_s1;
 
-    // stage 2 register
-    logic [27:0] t_s2; 
+    /* verilator lint_off UNUSED */
+    logic [27:0] t_s2;    // [15:0] discarded by >>16 -- intentional
+    /* verilator lint_on UNUSED */
 
-    // validity tracking shift register
-    logic [2:0]  v;           // v[0]=after stage1, v[1]=after stage2, v[2]=output
-
-    // stage 1: combinational portion
+    logic [2:0]  v;
     logic [15:0] x_low;
-    logic [31:0] m_full;
+
+    /* verilator lint_off UNUSED */
+    logic [31:0] m_full;  // [31:16] discarded by mod 2^16 -- intentional
+    /* verilator lint_on UNUSED */
+
     logic [15:0] m;
     logic [27:0] mq;
-    assign mq = m_s1 * Q;   // 16x12 = max 218,166,015, fits in 28 bits
 
-    assign x_low  = x[15:0];
-    assign m_full = x_low * Q_NEG_INV;   // 16x16 = 32 bit product
-    assign m      = m_full[15:0];         // bottom 16 bits = mod 2^16
+    assign mq    = m_s1 * Q;
+    assign x_low = x[15:0];
+    assign m_full = x_low * Q_NEG_INV;
+    assign m      = m_full[15:0];
 
-    // all three pipeline registers in one always_ff
     always_ff @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             x_s1 <= 24'd0;
@@ -42,21 +39,14 @@ module mont_reduce (
             z    <= 12'd0;
             v    <= 3'd0;
         end else begin
-            // stage 1: register x and m
             x_s1 <= x;
             m_s1 <= m;
-
-            // stage 2: compute and register t
-            t_s2 <= {4'b0, x_s1} + mq;  
-
-            // stage 3: shift and conditional subtract
+            t_s2 <= {4'b0, x_s1} + mq;
             if (t_s2[27:16] >= Q) begin
                 z <= t_s2[27:16] - Q;
             end else begin
                 z <= t_s2[27:16];
             end
-
-            // validity pipeline
             v[0] <= in_valid;
             v[1] <= v[0];
             v[2] <= v[1];
